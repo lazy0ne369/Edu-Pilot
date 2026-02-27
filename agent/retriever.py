@@ -1,0 +1,82 @@
+"""
+CollegeCompass AI — ChromaDB retriever factory.
+Embeddings: OllamaEmbeddings (nomic-embed-text) — local, stable, already ingested.
+LLM: Gemini 1.5 Flash (in graph.py).
+"""
+
+from langchain_chroma import Chroma
+from langchain_ollama import OllamaEmbeddings
+
+from agent.config import (
+    CHROMA_PATH,
+    COLLECTION_NAME,
+    EMBED_MODEL,
+    OLLAMA_BASE_URL,
+    RETRIEVER_K,
+    SCORE_THRESHOLD,
+)
+
+
+def _build_where_filter(
+    state: str = None,
+    exam: str = None,
+    budget_max: int = None,
+    branch: str = None,
+) -> dict | None:
+    conditions = []
+    if state:
+        conditions.append({"state": {"$eq": state}})
+    if exam:
+        conditions.append({"exams": {"$contains": exam}})
+    if budget_max:
+        conditions.append({"tuition_fee": {"$lte": budget_max}})
+    if branch:
+        conditions.append({"branches": {"$contains": branch}})
+
+    if not conditions:
+        return None
+    if len(conditions) == 1:
+        return conditions[0]
+    return {"$and": conditions}
+
+
+def get_retriever(
+    state: str = None,
+    exam: str = None,
+    budget_max: int = None,
+    branch: str = None,
+):
+    """
+    Return a similarity-score-threshold retriever backed by ChromaDB.
+    Uses OllamaEmbeddings (nomic-embed-text) — unchanged from original.
+    Only the chat LLM has been migrated to Gemini.
+    """
+    embeddings = OllamaEmbeddings(
+        model=EMBED_MODEL,
+        base_url=OLLAMA_BASE_URL,
+    )
+
+    vectorstore = Chroma(
+        collection_name=COLLECTION_NAME,
+        embedding_function=embeddings,
+        persist_directory=CHROMA_PATH,
+    )
+
+    where_filter = _build_where_filter(
+        state=state,
+        exam=exam,
+        budget_max=budget_max,
+        branch=branch,
+    )
+
+    retriever_kwargs: dict = {
+        "k": RETRIEVER_K,
+        "score_threshold": SCORE_THRESHOLD,
+    }
+    if where_filter:
+        retriever_kwargs["filter"] = where_filter
+
+    return vectorstore.as_retriever(
+        search_type="similarity_score_threshold",
+        search_kwargs=retriever_kwargs,
+    )
