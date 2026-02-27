@@ -1,5 +1,5 @@
 """
-CollegeCompass AI — Synthetic college data generator.
+EduPilot — Synthetic college data generator.
 Generates data/colleges.json with 50 realistic Indian engineering colleges.
 Run: python data/generate_data.py
 """

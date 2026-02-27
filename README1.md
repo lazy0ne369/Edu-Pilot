@@ -1,4 +1,4 @@
-# 🎓 CollegeCompass AI
+# 🎓 EduPilot AI
 
 **A fully local Indian college admission counsellor — powered by RAG, LangGraph, ChromaDB, Ollama, and Streamlit.**
 
@@ -36,7 +36,7 @@
 
 ## 1. What Is This?
 
-CollegeCompass AI is a **Retrieval-Augmented Generation (RAG)** chatbot that acts as a personal Indian college admission counsellor. A student types natural language questions — their JEE rank, budget, preferred state, branch, category — and the agent searches a local vector database of 30 real-world colleges, retrieves the most relevant records, and generates a grounded, structured response via a local LLM.
+EduPilot AI is a **Retrieval-Augmented Generation (RAG)** chatbot that acts as a personal Indian college admission counsellor. A student types natural language questions — their JEE rank, budget, preferred state, branch, category — and the agent searches a local vector database of 30 real-world colleges, retrieves the most relevant records, and generates a grounded, structured response via a local LLM.
 
 **Target users:** Indian engineering students preparing for JEE / BITSAT / state entrance exams.
 

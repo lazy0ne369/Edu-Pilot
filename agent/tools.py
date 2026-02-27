@@ -1,5 +1,5 @@
 """
-LangGraph tool definitions for CollegeCompass AI.
+LangGraph tool definitions for EduPilot.
 Three tools: search_colleges, check_eligibility, get_deadlines.
 Docstrings are read by LangGraph to decide which tool to invoke.
 """

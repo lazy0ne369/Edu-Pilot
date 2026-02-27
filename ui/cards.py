@@ -1,5 +1,5 @@
 """
-CollegeCompass AI — College recommendation card renderer.
+EduPilot — College recommendation card renderer.
 
 render_college_card(college_dict) renders a styled Streamlit card
 for a single college. Called from external code when structured

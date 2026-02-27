@@ -1,5 +1,5 @@
 """
-CollegeCompass AI — Streamlit sidebar with filter widgets.
+EduPilot — Streamlit sidebar with filter widgets.
 render_sidebar() returns a dict of the student's selected filters.
 """
 
@@ -48,7 +48,7 @@ def render_sidebar() -> dict:
     """
     with st.sidebar:
 
-        st.markdown("## 🎓 CollegeCompass AI")
+        st.markdown("## 🎓 EduPilot")
         st.markdown("*Your local admission counsellor*")
         st.divider()
 
@@ -101,12 +101,12 @@ def render_sidebar() -> dict:
         st.divider()
         st.markdown("### ℹ️ About")
         st.caption(
-            "CollegeCompass AI runs 100% locally using Ollama + ChromaDB. "
+            "EduPilot runs 100% locally using Ollama + ChromaDB. "
             "No data leaves your device."
         )
 
         st.markdown("**Models used:**")
-        st.code("LLM:    qwen2:0.5b\nEmbed:  nomic-embed-text", language="text")
+        st.code("LLM:    Solar Pro 3\nEmbed:  mxbai-embed-large", language="text")
 
         st.markdown("**Quick start:**")
         with st.expander("Example questions"):

@@ -1,5 +1,5 @@
 """
-CollegeCompass AI — LangGraph StateGraph.
+EduPilot — LangGraph StateGraph.
 LLM: upstage/solar-pro-3:free via OpenRouter (no tool calling needed)
 RAG: Context retrieved from ChromaDB and injected directly into system prompt.
 
@@ -54,7 +54,7 @@ def _call_openrouter(model: str, system: str, history: list[dict]) -> str:
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://collegecompass.ai",
-            "X-OpenRouter-Title": "CollegeCompass AI",
+            "X-OpenRouter-Title": "EduPilot",
         },
         json={
             "model": model,
@@ -87,7 +87,7 @@ def _retrieve_context(query: str, filters: dict) -> str:
             for doc in docs
         )
     except Exception as e:
-        log.warning("[CollegeCompass] Retrieval failed: %s", e)
+        log.warning("[EduPilot] Retrieval failed: %s", e)
         return ""
 
 
@@ -149,7 +149,7 @@ def build_graph():
                 return {"messages": [AIMessage(content=content)]}
             except Exception as e:
                 last_err = str(e)
-                log.warning("[CollegeCompass] Model %s failed: %s", model, e)
+                log.warning("[EduPilot] Model %s failed: %s", model, e)
                 continue
 
         # All models failed

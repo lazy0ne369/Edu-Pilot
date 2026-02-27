@@ -1,5 +1,5 @@
 """
-CollegeCompass AI — Chat UI helpers.
+EduPilot — Chat UI helpers.
 
 Functions:
     render_welcome(filters)  — Dynamic suggestions based on active sidebar filters
@@ -93,7 +93,7 @@ def render_welcome(filters: dict = None) -> None:
     st.markdown(
         """
         <div style="text-align: center; padding: 2rem 1rem 1rem;">
-            <h2 style="margin-bottom: 0.2rem;">👋 Welcome to CollegeCompass AI</h2>
+            <h2 style="margin-bottom: 0.2rem;">👋 Welcome to EduPilot</h2>
             <p style="color: grey; font-size: 0.95rem;">
                 Ask me anything about Indian engineering admissions —
                 ranks, fees, cutoffs, scholarships, or deadlines.

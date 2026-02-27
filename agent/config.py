@@ -1,7 +1,7 @@
 """
-CollegeCompass AI — Configuration constants.
-LLM:        Llama 3.3 70B via OpenRouter (OpenAI-compatible API)
-Embeddings: nomic-embed-text via Ollama (local, stable)
+EduPilot — Configuration constants.
+LLM:        Solar Pro 3 via OpenRouter (OpenAI-compatible API)
+Embeddings: mxbai-embed-large via Ollama (local, stable)
 """
 
 import os

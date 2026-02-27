@@ -1,7 +1,7 @@
 """
-CollegeCompass AI — Data ingestion into ChromaDB.
-Embeddings: OllamaEmbeddings (nomic-embed-text) — unchanged, stable.
-LLM: Gemini (in graph.py only).
+EduPilot — Data ingestion into ChromaDB.
+Embeddings: OllamaEmbeddings (mxbai-embed-large) — stable.
+LLM: Solar Pro 3 via OpenRouter.
 
 Public API:
     ingest()          — Full ingest: load JSON → embed → store (idempotent)

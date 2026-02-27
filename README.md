@@ -1,8 +1,8 @@
-# 🎓 CollegeCompass AI
+# 🎓 EduPilot AI
 **Local Indian college admission counsellor powered by RAG + Ollama**
 
 ## Overview
-CollegeCompass AI helps Indian engineering students find colleges
+EduPilot AI helps Indian engineering students find colleges
 based on JEE rank, budget, state, branch, and category.
 100% local — no API keys, no internet required after setup.
 

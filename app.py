@@ -1,5 +1,5 @@
 """
-CollegeCompass AI — Streamlit entrypoint.
+EduPilot — Streamlit entrypoint.
 Run: streamlit run app.py
 
 This file ONLY wires ui/ and agent/ modules together.
@@ -12,7 +12,7 @@ from langchain_core.messages import HumanMessage
 
 # ── Page config — must be first Streamlit call ────────────────
 st.set_page_config(
-    page_title="CollegeCompass AI",
+    page_title="EduPilot",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -54,7 +54,7 @@ def main():
     st.session_state.filters = filters
 
     # Header
-    st.title("🎓 CollegeCompass AI")
+    st.title("🎓 EduPilot")
     st.caption(
         f"Indian college admission counsellor · "
         f"Session: `{st.session_state.session_id[:8]}…` · "

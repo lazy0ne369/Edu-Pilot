@@ -1,7 +1,7 @@
 """
-CollegeCompass AI — ChromaDB retriever factory.
-Embeddings: OllamaEmbeddings (nomic-embed-text) — local, stable, already ingested.
-LLM: Gemini 1.5 Flash (in graph.py).
+EduPilot — ChromaDB retriever factory.
+Embeddings: OllamaEmbeddings (mxbai-embed-large) — local, stable, already ingested.
+LLM: Solar Pro 3 via OpenRouter.
 """
 
 from langchain_chroma import Chroma
