@@ -21,8 +21,8 @@ from agent.config import (
     LLM_MODEL,
     LLM_TEMPERATURE,
     MEMORY_K,
-    OPENROUTER_API_KEY,
-    OPENROUTER_BASE_URL,
+    LLM_API_KEY,
+    LLM_BASE_URL,
 )
 from agent.prompts import SYSTEM_PROMPT
 from agent.retriever import get_retriever
@@ -30,31 +30,30 @@ from agent.retriever import get_retriever
 load_dotenv()
 log = logging.getLogger(__name__)
 
-# Fallback models tried in order if primary fails
+# Fallback models for when primary fails (Gemini)
 FALLBACK_MODELS = [
-    "upstage/solar-pro-3:free",
-    "arcee-ai/trinity-mini:free",
-    "google/gemma-3-4b-it:free",
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
+    "gemini-2.0-flash",
 ]
 
 
 # ── State ─────────────────────────────────────────────────────
 class AgentState(TypedDict):
-    messages:   Annotated[list[BaseMessage], add_messages]
-    filters:    dict      # sidebar filters passed from app.py
-    context:    str       # retrieved RAG context
+    messages:      Annotated[list[BaseMessage], add_messages]
+    filters:       dict      # sidebar filters passed from app.py
+    context:       str       # retrieved RAG context
+    college_count: int       # number of colleges found matching filters
 
 
 # ── OpenRouter call (raw requests — simple and reliable) ──────
-def _call_openrouter(model: str, system: str, history: list[dict]) -> str:
-    """Call OpenRouter with a given model and message history."""
+def _call_llm(model: str, system: str, history: list[dict]) -> str:
+    """Call the LLM with a given model and message history."""
     response = http_requests.post(
-        url=f"{OPENROUTER_BASE_URL}/chat/completions",
+        url=f"{LLM_BASE_URL}/chat/completions",
         headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Authorization": f"Bearer {LLM_API_KEY}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://collegecompass.ai",
-            "X-OpenRouter-Title": "EduPilot",
         },
         json={
             "model": model,
@@ -63,14 +62,22 @@ def _call_openrouter(model: str, system: str, history: list[dict]) -> str:
         },
         timeout=30,
     )
+    # Gemini OpenAI endpoint sometimes returns a list of error objects: [{"error": {...}}]
     data = response.json()
+    if isinstance(data, list) and len(data) > 0:
+        data = data[0]
+
     if "choices" in data:
         return data["choices"][0]["message"]["content"]
-    raise RuntimeError(data.get("error", {}).get("message", str(data)))
+    
+    # Handle error message
+    err_info = data.get("error", {}) if isinstance(data, dict) else {}
+    msg = err_info.get("message", str(data))
+    raise RuntimeError(msg)
 
 
 # ── RAG retrieval ─────────────────────────────────────────────
-def _retrieve_context(query: str, filters: dict) -> str:
+def _retrieve_context(query: str, filters: dict) -> tuple[str, int]:
     """Retrieve relevant college docs from ChromaDB and format as context."""
     try:
         retriever = get_retriever(
@@ -81,14 +88,19 @@ def _retrieve_context(query: str, filters: dict) -> str:
         )
         docs = retriever.invoke(query)
         if not docs:
-            return "No specific college data found for this query."
-        return "\n\n---\n\n".join(
+            return "No specific college data found for this query.", 0
+        
+        # Sort docs by NIRF rank if available, otherwise keep semantic order
+        docs = sorted(docs, key=lambda x: x.metadata.get("nirf_rank", 999))
+        
+        ctx = "\n\n---\n\n".join(
             f"**{doc.metadata.get('name', 'College')}**\n{doc.page_content}"
             for doc in docs
         )
+        return ctx, len(docs)
     except Exception as e:
         log.warning("[EduPilot] Retrieval failed: %s", e)
-        return ""
+        return "", 0
 
 
 # ── Build graph ───────────────────────────────────────────────
@@ -102,14 +114,15 @@ def build_graph():
             (m.content for m in reversed(messages) if isinstance(m, HumanMessage)),
             ""
         )
-        context = _retrieve_context(query, filters)
-        return {"context": context}
+        context, count = _retrieve_context(query, filters)
+        return {"context": context, "college_count": count}
 
     def call_model(state: AgentState) -> dict:
         """Call the LLM with system prompt + retrieved context + conversation history."""
         messages = state["messages"]
         context  = state.get("context", "")
         filters  = state.get("filters", {})
+        count    = state.get("college_count", 0)
 
         # Trim history
         trimmed  = messages[-(MEMORY_K * 2):] if len(messages) > MEMORY_K * 2 else messages
@@ -123,10 +136,11 @@ def build_graph():
             filter_info = f"\nStudent profile: {', '.join(parts)}"
 
         system = SYSTEM_PROMPT + filter_info
-        if context:
-            system += f"\n\n=== Retrieved College Data ===\n{context}\n=== End of Data ===\n\nAnswer ONLY using the above data."
+        if count > 0:
+            system += f"\n\nTotal matching colleges found: {count}."
+            system += f"\n=== Retrieved College Data ===\n{context}\n=== End of Data ===\n\nStritly list ALL {count} matching colleges. DO NOT TRUNCATE or say 'some of the colleges'."
         else:
-            system += "\n\nNo specific college data was retrieved for this query. State that clearly."
+            system += "\n\nNo matching colleges found for this student profile and query. State that clearly and suggest adjusting filters."
 
         # Convert LangChain messages to OpenRouter format
         history = []
@@ -145,7 +159,7 @@ def build_graph():
 
         for model in models_to_try:
             try:
-                content = _call_openrouter(model, system, history)
+                content = _call_llm(model, system, history)
                 return {"messages": [AIMessage(content=content)]}
             except Exception as e:
                 last_err = str(e)
@@ -167,12 +181,12 @@ def build_graph():
 def _error_msg(err: str) -> str:
     e = err.lower()
     if "401" in e or "unauthorized" in e:
-        return "⚠️ **Invalid OpenRouter API key.** Check your `.env` file."
+        return "⚠️ **Invalid API key.** Check your `.env` file for your Gemini key."
     if "429" in e or "rate limit" in e:
-        return "⚠️ **Rate limit hit.** Please wait a moment and try again."
+        return "⚠️ **Rate limit hit on Gemini.** Please wait a moment and try again."
     if "connection" in e or "timeout" in e:
         return "⚠️ **Connection error.** Check your internet and try again."
-    return f"⚠️ All models temporarily unavailable. Please try again in a moment.\n\n`{err}`"
+    return f"⚠️ All models temporarily unavailable on Gemini. Please try again in a moment.\n\n`{err}`"
 
 
 # ── Singleton ─────────────────────────────────────────────────

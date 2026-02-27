@@ -9,12 +9,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── OpenRouter / LLM ──────────────────────────────────────────
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+# ── Gemini / LLM ──────────────────────────────────────────────
+LLM_API_KEY      = os.environ.get("GEMINI_API_KEY", "")
+LLM_BASE_URL     = "https://generativelanguage.googleapis.com/v1beta/openai"
 
-# Best available free model on OpenRouter right now (confirmed working):
-LLM_MODEL        = "upstage/solar-pro-3:free"
+# Best performing Gemini models (gemini-flash-latest is recommended):
+LLM_MODEL        = "gemini-flash-latest"
 LLM_TEMPERATURE  = 0.3
 
 # ── Embeddings (Ollama — local, stable) ───────────────────────
@@ -26,8 +26,8 @@ CHROMA_PATH     = "./chroma_db"
 COLLECTION_NAME = "college_compass"
 
 # ── Retriever ─────────────────────────────────────────────────
-RETRIEVER_K      = 3
-SCORE_THRESHOLD  = 0.3
+RETRIEVER_K      = 50
+SCORE_THRESHOLD  = 0.1
 
 # ── Conversation memory ───────────────────────────────────────
 MEMORY_K        = 6

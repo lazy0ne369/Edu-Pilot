@@ -164,8 +164,12 @@ def render_stream(graph, input_msg: dict, config: dict) -> str:
     response_placeholder = st.empty()
     full_response = ""
 
-    # Show a spinner while the agent is thinking / calling tools
-    with st.spinner("🔍 Searching college database…"):
+    # Clear previous count if any
+    if "last_count" in st.session_state:
+        del st.session_state.last_count
+
+    # Show a simple spinner while the agent is searching
+    with st.spinner("🔍 Searching college database..."):
         try:
             for state in graph.stream(input_msg, config, stream_mode="values"):
                 messages = state.get("messages", [])
@@ -181,39 +185,15 @@ def render_stream(graph, input_msg: dict, config: dict) -> str:
                         response_placeholder.markdown(full_response + "▌")
 
             if full_response:
+                # Update with the final full text
                 response_placeholder.markdown(full_response)
             else:
-                full_response = (
-                    "I couldn't generate a response. "
-                    "Make sure Ollama is running (`ollama serve`) "
-                    f"and the model is pulled (`ollama pull llama3.2:3b`)."
-                )
-                response_placeholder.warning(full_response)
+                full_response = "Thinking..."
+                response_placeholder.markdown(full_response)
 
         except Exception as e:
             error_msg = str(e)
-            if "Connection refused" in error_msg or "11434" in error_msg:
-                full_response = (
-                    "⚠️ **Ollama is not running.**\n\n"
-                    "Start it with: `ollama serve`\n\n"
-                    "Then pull the model: `ollama pull llama3.2:3b`"
-                )
-            elif "does not support tools" in error_msg or "400" in error_msg:
-                full_response = (
-                    "⚠️ **Tool calling not supported by this model.**\n\n"
-                    "Update `agent/config.py` and set:\n"
-                    "```python\nLLM_MODEL = \"llama3.2:3b\"\n```\n"
-                    "Then pull: `ollama pull llama3.2:3b`"
-                )
-            elif "Collection" in error_msg or "not found" in error_msg.lower():
-                full_response = (
-                    "⚠️ **College database not found.**\n\n"
-                    "Run:\n"
-                    "```\npython data/generate_data.py\npython -m agent.ingest\n```"
-                )
-            else:
-                full_response = f"⚠️ **Error:** {error_msg}"
-
+            full_response = f"⚠️ **Error:** {error_msg}"
             response_placeholder.markdown(full_response)
 
     return full_response
