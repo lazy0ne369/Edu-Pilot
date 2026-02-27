@@ -26,6 +26,7 @@ chroma_db/
 agent.zip
 collegecompass_master_prompt.docx
 
-# Data
+# Logs
+*.log
 data/*.json
 !data/colleges.json # Keeping the main data file
