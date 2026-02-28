@@ -63,8 +63,23 @@ def render_sidebar() -> dict:
         )
         
         st.divider()
-        st.caption("✦ EduPilot Agent Context")
-        st.caption("Filters help the AI provide more relevant admissions advice.")
+        st.markdown('<div class="sidebar-header" style="margin-top:30px;">ℹ️ About</div>', unsafe_allow_html=True)
+        st.caption(
+            "EduPilot uses Google Gemini for chat and HuggingFace for lightning-fast local RAG retrieval."
+        )
+
+        st.markdown("**Models used:**")
+        st.code("LLM:    gemini-1.5-flash\nEmbed:  all-MiniLM-L6-v2", language="text")
+
+        st.markdown("**Quick start:**")
+        with st.expander("Example questions"):
+            st.markdown(
+                "- Show CSE colleges under ₹2L in Tamil Nadu\n"
+                "- Can I get NIT Trichy with JEE rank 45000 OBC?\n"
+                "- When does VIT application close?\n"
+                "- Best BITS campus for CS?\n"
+                "- IIT cutoffs for SC category 2024"
+            )
 
     return {
         "exam":       exam or None,

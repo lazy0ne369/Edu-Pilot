@@ -10,16 +10,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── Gemini / LLM ──────────────────────────────────────────────
-LLM_API_KEY      = os.environ.get("GEMINI_API_KEY", "")
-LLM_BASE_URL     = "https://generativelanguage.googleapis.com/v1beta/openai"
+LLM_API_KEY      = os.environ.get("GOOGLE_API_KEY", "")
 
-# Best performing Gemini models (gemini-flash-latest is recommended):
-LLM_MODEL        = "gemini-flash-latest"
+# Best performing Gemini models:
+LLM_MODEL        = "gemini-1.5-flash"
 LLM_TEMPERATURE  = 0.3
 
-# ── Embeddings (Ollama — local, stable) ───────────────────────
-EMBED_MODEL     = "mxbai-embed-large"
-OLLAMA_BASE_URL = "http://localhost:11434"
+# ── Embeddings (HuggingFace — cloud-friendly, free, low memory) ─────────
+EMBED_MODEL     = "all-MiniLM-L6-v2"
 
 # ── ChromaDB ──────────────────────────────────────────────────
 CHROMA_PATH     = "./chroma_db"

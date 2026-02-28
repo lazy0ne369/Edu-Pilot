@@ -15,23 +15,34 @@ from pathlib import Path
 import chromadb
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_ollama import OllamaEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from agent.config import (
     CHROMA_PATH,
     COLLECTION_NAME,
     DATA_PATH,
     EMBED_MODEL,
-    OLLAMA_BASE_URL,
 )
 
 
 def _load_colleges(data_path: str = DATA_PATH) -> list[dict]:
     path = Path(data_path)
     if not path.exists():
-        raise FileNotFoundError(
-            f"College data not found at {path!r}. Run: python data/generate_data.py"
-        )
+        print(f"College data not found at {path!r}. Generating...")
+        try:
+            from data.generate_data import main as generate_data_main
+            generate_data_main()
+        except ImportError:
+            import subprocess
+            import sys
+            script_path = str(Path(__file__).parent.parent / "data" / "generate_data.py")
+            subprocess.run([sys.executable, script_path], check=True)
+            
+        if not path.exists():
+            raise FileNotFoundError(
+                f"College data not found at {path!r}. Run: python data/generate_data.py"
+            )
+            
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -97,7 +108,7 @@ def _get_file_hash(data_path: str) -> str:
 
 def ingest(data_path: str = DATA_PATH) -> int:
     """
-    Load college data, embed with nomic-embed-text (Ollama), store in ChromaDB.
+    Load college data, embed with Google Gemini model, store in ChromaDB.
     Idempotent — deletes and recreates the collection on every call.
     """
     print("Loading college data …")
@@ -105,9 +116,8 @@ def ingest(data_path: str = DATA_PATH) -> int:
     documents = [_college_to_document(c) for c in colleges]
 
     print(f"Embedding {len(documents)} colleges with {EMBED_MODEL} …")
-    embeddings = OllamaEmbeddings(
-        model=EMBED_MODEL,
-        base_url=OLLAMA_BASE_URL,
+    embeddings = HuggingFaceEmbeddings(
+        model_name=EMBED_MODEL
     )
 
     client = chromadb.PersistentClient(path=CHROMA_PATH)
