@@ -20,17 +20,18 @@ def inject_chat_css():
             padding-bottom: 40px; 
         }
 
+        /* ── Chat Animations ────────────────────────────────────────── */
+        @keyframes chatFadeInSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Message Bubbles Styling */
         [data-testid="stChatMessage"] {
             border: none !important;
             background-color: transparent !important;
-            margin-bottom: 1.5rem !important;
-            animation: fadeInSlide 0.5s ease-out;
-        }
-        
-        @keyframes fadeInSlide {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+            margin-bottom: 2rem !important;
+            animation: chatFadeInSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
         }
         
         /* User bubble (Right) */
@@ -40,13 +41,13 @@ def inject_chat_css():
             text-align: right;
         }
         div[data-testid="stChatMessage"]:has(span[aria-label="👤"]) .stMarkdown {
-            background-color: #000 !important;
+            background: linear-gradient(135deg, #111, #222) !important;
             color: #fff !important;
-            padding: 12px 20px !important;
+            padding: 14px 22px !important;
             border-radius: 20px 20px 4px 20px !important;
             max-width: 75%;
             font-size: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
         }
         div[data-testid="stChatMessage"]:has(span[aria-label="👤"]) .stMarkdown p {
             color: white !important;
@@ -59,20 +60,19 @@ def inject_chat_css():
             text-align: left;
         }
         div[data-testid="stChatMessage"]:has(span[aria-label="🎓"]) .stMarkdown {
-            background-color: #f6f6f7 !important;
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            backdrop-filter: blur(10px) !important;
             color: #1a1a1a !important;
             padding: 18px 24px !important;
             border-radius: 20px 20px 20px 4px !important;
             max-width: 85%;
-            border: 1px solid #eee;
+            border: 1px solid rgba(0,0,0,0.05);
             font-size: 15px;
             line-height: 1.6;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
         }
         
-        /* 
-           Chat Input Integration Fix:
-           We move the chat input into the flow so it doesn't float over the footer.
-        */
+        /* Chat Input Integration */
         [data-testid="stChatInput"] {
             position: relative !important;
             bottom: auto !important;
@@ -84,29 +84,47 @@ def inject_chat_css():
             z-index: 100;
         }
         
-        /* Style the internal input box */
         [data-testid="stChatInput"] > div {
-            border: 1px solid #e0e0e0 !important;
-            border-radius: 12px !important;
-            background: white !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03) !important;
-            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.08) !important;
+            border-radius: 16px !important;
+            background: rgba(255,255,255,0.85) !important;
+            backdrop-filter: blur(10px) !important;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.04) !important;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
         [data-testid="stChatInput"]:focus-within > div {
-            border-color: #000 !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+            border-color: #222 !important;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.1) !important;
+            transform: translateY(-2px);
         }
 
         /* Responsive textarea */
         [data-testid="stChatInput"] textarea {
-            font-size: 15px !important;
-            padding: 15px !important;
+            font-size: 16px !important;
+            padding: 18px 20px !important;
         }
 
-        /* Hide avatars for minimal look */
         [data-testid="stChatMessageAvatar"] {
             display: none !important;
+        }
+
+        /* Enhanced Welcome Screen Typography */
+        .chat-hero-title {
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #111, #555, #111);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            animation: chatFadeInSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .chat-hero-subtitle {
+            color: #666;
+            font-size: 18px;
+            animation: chatFadeInSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+            opacity: 0;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -116,9 +134,9 @@ def render_welcome(filters: dict = None) -> None:
     inject_chat_css()
     st.markdown('<div class="chat-view-root">', unsafe_allow_html=True)
     st.markdown("""
-        <div style="text-align: center; margin: 40px 0;">
-            <h2 style="font-weight: 800; font-size: 32px; letter-spacing: -0.01em;">How can I help you today?</h2>
-            <p style="color: #666; font-size: 16px;">Predict your college match with AI.</p>
+        <div style="text-align: center; margin: 60px 0 50px 0;">
+            <h2 class="chat-hero-title">How can I help you today?</h2>
+            <p class="chat-hero-subtitle">Predict your college match with AI.</p>
         </div>
     """, unsafe_allow_html=True)
 

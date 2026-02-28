@@ -36,94 +36,185 @@ if "username" not in st.session_state:
 if "saved_colleges" not in st.session_state:
     st.session_state.saved_colleges = ["IIT Bombay", "NIT Trichy", "BITS Pilani"]
 
-# ── Custom CSS ────────────────────────────────────────────────
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
-    html, body, [data-testid="stAppViewContainer"] {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        background-color: #ffffff;
+    /* ── Animations ───────────────────────────────────────────── */
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
 
-    /* Fixed Premium Header */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes floating {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+
+    /* ── Global Styles & Color Grading ───────────────────────── */
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        /* Premium Soft Mesh Gradient / Color Grading Effect */
+        background: linear-gradient(-45deg, #fdfbfb, #ebedee, #fdfcfb, #e2d1c3);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+        color: #111;
+    }
+
     [data-testid="stHeader"] {
         display: none !important;
     }
     
     .st-emotion-cache-18ni77z { padding-top: 0px !important; }
 
+    /* Fixed Premium Header with Glassmorphism */
     .header-anchor {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
-        height: 70px;
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(12px) saturate(180%);
-        border-bottom: 1px solid rgba(0,0,0,0.06);
+        height: 75px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(20px) saturate(200%);
+        border-bottom: 1px solid rgba(0,0,0,0.05);
         z-index: 999999;
         display: flex;
         align-items: center;
         padding: 0 5%;
-        box-sizing: border-box;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
     }
 
     .main .block-container {
-        padding-top: 70px !important;
-        padding-bottom: 20px !important;
+        padding-top: 85px !important;
+        padding-bottom: 40px !important;
     }
 
     /* Navigation button overrides */
     div[data-testid="stColumn"] button[kind="secondary"] {
         background: transparent !important;
         border: none !important;
-        color: #666 !important;
-        font-weight: 500 !important;
+        color: #555 !important;
+        font-weight: 600 !important;
         font-size: 15px !important;
-        padding: 0 10px !important;
-        transition: color 0.3s ease !important;
+        padding: 8px 16px !important;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        border-radius: 12px !important;
     }
     div[data-testid="stColumn"] button[kind="secondary"]:hover {
         color: #000 !important;
+        background: rgba(0,0,0,0.04) !important;
+        transform: translateY(-1px);
     }
     
     div[data-testid="stColumn"] button[kind="primary"] {
-        background-color: #000 !important;
+        background: linear-gradient(135deg, #111 0%, #333 100%) !important;
         color: #fff !important;
         border-radius: 20px !important;
         padding: 8px 24px !important;
         font-weight: 600 !important;
         border: none !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    div[data-testid="stColumn"] button[kind="primary"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2) !important;
+    }
+
+    /* ── Typography & Layout Animations ───────────────────────── */
+    .hero-title {
+        font-size: 64px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        background: linear-gradient(135deg, #111, #444, #111);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        opacity: 0;
+        margin-bottom: 10px;
+    }
+
+    .hero-subtitle {
+        color: #555;
+        font-size: 20px;
+        margin-bottom: 50px;
+        animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+        opacity: 0;
     }
 
     /* Home Search Bar */
     .home-search-wrap {
-        max-width: 65% !important;
+        max-width: 60% !important;
         margin: 0 auto !important;
+        animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+        opacity: 0;
     }
+    
     [data-testid="stTextInput"] input {
-        height: 52px !important;
-        border-radius: 12px !important;
-        border: 1px solid #e0e0e0 !important;
-        padding-left: 45px !important;
-        font-size: 16px !important;
-        transition: all 0.3s ease !important;
+        height: 60px !important;
+        border-radius: 18px !important;
+        border: 2px solid transparent !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(12px) !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.06) !important;
+        padding-left: 24px !important;
+        font-size: 17px !important;
+        font-weight: 500 !important;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
     [data-testid="stTextInput"] input:focus {
-        border-color: #000 !important;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important;
+        border-color: #222 !important;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.12) !important;
+        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 1) !important;
+    }
+
+    /* Hero Image */
+    .hero-image {
+        height: 480px;
+        width: 100%;
+        max-width: 90%;
+        margin: 80px auto;
+        background-image: url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1600&q=80');
+        background-size: cover;
+        background-position: center;
+        border-radius: 28px;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+        animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.45s forwards;
+        opacity: 0;
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hero-image:hover {
+        transform: scale(1.02);
+    }
+
+    /* Vision Section */
+    .vision-section {
+        padding: 60px 0;
+        text-align: center;
+        max-width: 700px;
+        margin: 0 auto;
+        animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+        opacity: 0;
     }
 
     /* Footer Redesign */
     .premium-footer {
-        background-color: #1a1a1a;
-        color: #999;
-        padding: 40px 5%;
-        border-top: 1px solid #333;
-        margin-top: 80px;
+        background-color: #0f0f0f;
+        color: #888;
+        padding: 50px 5%;
+        border-top: 1px solid #222;
+        margin-top: 100px;
         width: 100%;
-        font-size: 13px;
+        font-size: 14px;
+        box-shadow: inset 0 20px 40px rgba(0,0,0,0.2);
     }
     .footer-content {
         display: flex;
@@ -135,34 +226,35 @@ st.markdown("""
     .footer-left {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 8px;
     }
     .footer-right {
         display: flex;
-        gap: 24px;
+        gap: 30px;
         align-items: center;
     }
     .footer-logo {
         color: #fff;
         font-weight: 800;
-        font-size: 18px;
+        font-size: 20px;
         letter-spacing: -0.01em;
     }
     .footer-tagline {
-        color: #666;
-        font-size: 12px;
+        color: #777;
+        font-size: 13px;
     }
     .footer-links {
         display: flex;
-        gap: 20px;
+        gap: 24px;
         list-style: none;
         padding: 0;
         margin: 0;
     }
     .footer-links a {
-        color: #999;
+        color: #888;
         text-decoration: none;
-        transition: color 0.3s;
+        transition: color 0.3s ease;
+        font-weight: 500;
     }
     .footer-links a:hover {
         color: #fff;
@@ -181,6 +273,9 @@ st.markdown("""
         .footer-links {
             justify-content: center;
         }
+        .hero-title { font-size: 42px; }
+        .hero-image { height: 300px; }
+        .home-search-wrap { max-width: 90% !important; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -234,8 +329,8 @@ def get_data_hash():
 # ── Home Page ─────────────────────────────────────────────────
 def render_home_page():
     st.markdown('<div style="text-align: center; margin-top: 80px;">', unsafe_allow_html=True)
-    st.markdown('<h1 style="font-size: 52px; font-weight: 800; letter-spacing: -0.02em;">Elevate Your Future.</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="color: #666; font-size: 18px; margin-bottom: 40px;">Personalised admissions guidance powered by local AI.</p>', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">Elevate Your Future.</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Personalised admissions guidance powered by AI.</p>', unsafe_allow_html=True)
     
     st.markdown('<div class="home-search-wrap">', unsafe_allow_html=True)
     search_input = st.text_input("Search colleges...", placeholder="Find colleges by name, city, or courses...", label_visibility="collapsed", key="search_h")
@@ -244,9 +339,9 @@ def render_home_page():
         go_to("agent")
     st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown('<div style="height: 380px; width: 100%; max-width: 90%; margin: 60px auto; background-image: url(\'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1400\'); background-size: cover; background-position: center; border-radius: 20px;"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-image"></div>', unsafe_allow_html=True)
 
-    st.markdown('<div style="padding: 60px 0; text-align: center; max-width: 700px; margin: 0 auto;">', unsafe_allow_html=True)
+    st.markdown('<div class="vision-section">', unsafe_allow_html=True)
     st.markdown('<h2 style="font-weight: 800; font-size: 32px; margin-bottom: 20px;">Our Vision</h2>', unsafe_allow_html=True)
     st.markdown('<p style="color: #444; line-height: 1.7; font-size: 17px;">Helping students make smarter college decisions through transparent, AI-powered insights while keeping data 100% private.</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
