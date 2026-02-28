@@ -8,4 +8,5 @@ chromadb>=0.5
 google-generativeai>=0.8
 python-dotenv>=1.0
 typing-extensions>=4.9
-langchain-ollama
+sentence-transformers>=3.0.1
+langchain-huggingface>=0.0.3

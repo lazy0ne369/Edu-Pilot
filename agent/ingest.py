@@ -15,14 +15,13 @@ from pathlib import Path
 import chromadb
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_ollama import OllamaEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from agent.config import (
     CHROMA_PATH,
     COLLECTION_NAME,
     DATA_PATH,
     EMBED_MODEL,
-    OLLAMA_BASE_URL,
 )
 
 
@@ -99,7 +98,7 @@ def _college_to_document(college: dict) -> Document:
 
 def ingest(data_path: str = DATA_PATH) -> int:
     """
-    Load college data, embed with nomic-embed-text (Ollama), store in ChromaDB.
+    Load college data, embed with Google Gemini model, store in ChromaDB.
     Idempotent — deletes and recreates the collection on every call.
     """
     print("Loading college data …")
@@ -107,9 +106,8 @@ def ingest(data_path: str = DATA_PATH) -> int:
     documents = [_college_to_document(c) for c in colleges]
 
     print(f"Embedding {len(documents)} colleges with {EMBED_MODEL} …")
-    embeddings = OllamaEmbeddings(
-        model=EMBED_MODEL,
-        base_url=OLLAMA_BASE_URL,
+    embeddings = HuggingFaceEmbeddings(
+        model_name=EMBED_MODEL
     )
 
     client = chromadb.PersistentClient(path=CHROMA_PATH)

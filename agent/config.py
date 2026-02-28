@@ -17,9 +17,8 @@ LLM_BASE_URL     = "https://generativelanguage.googleapis.com/v1beta/openai"
 LLM_MODEL        = "gemini-flash-latest"
 LLM_TEMPERATURE  = 0.3
 
-# ── Embeddings (Ollama — local, stable) ───────────────────────
-EMBED_MODEL     = "mxbai-embed-large"
-OLLAMA_BASE_URL = "http://localhost:11434"
+# ── Embeddings (HuggingFace — cloud-friendly, free, low memory) ─────────
+EMBED_MODEL     = "all-MiniLM-L6-v2"
 
 # ── ChromaDB ──────────────────────────────────────────────────
 CHROMA_PATH     = "./chroma_db"

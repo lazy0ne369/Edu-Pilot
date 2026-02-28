@@ -5,13 +5,12 @@ LLM: Solar Pro 3 via OpenRouter.
 """
 
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from agent.config import (
     CHROMA_PATH,
     COLLECTION_NAME,
     EMBED_MODEL,
-    OLLAMA_BASE_URL,
     RETRIEVER_K,
     SCORE_THRESHOLD,
 )
@@ -51,9 +50,8 @@ def get_retriever(
     Uses OllamaEmbeddings (nomic-embed-text) — unchanged from original.
     Only the chat LLM has been migrated to Gemini.
     """
-    embeddings = OllamaEmbeddings(
-        model=EMBED_MODEL,
-        base_url=OLLAMA_BASE_URL,
+    embeddings = HuggingFaceEmbeddings(
+        model_name=EMBED_MODEL
     )
 
     vectorstore = Chroma(
