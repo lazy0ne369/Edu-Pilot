@@ -29,9 +29,21 @@ from agent.config import (
 def _load_colleges(data_path: str = DATA_PATH) -> list[dict]:
     path = Path(data_path)
     if not path.exists():
-        raise FileNotFoundError(
-            f"College data not found at {path!r}. Run: python data/generate_data.py"
-        )
+        print(f"College data not found at {path!r}. Generating...")
+        try:
+            from data.generate_data import main as generate_data_main
+            generate_data_main()
+        except ImportError:
+            import subprocess
+            import sys
+            script_path = str(Path(__file__).parent.parent / "data" / "generate_data.py")
+            subprocess.run([sys.executable, script_path], check=True)
+            
+        if not path.exists():
+            raise FileNotFoundError(
+                f"College data not found at {path!r}. Run: python data/generate_data.py"
+            )
+            
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
