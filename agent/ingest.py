@@ -85,6 +85,16 @@ def _college_to_document(college: dict) -> Document:
     return Document(page_content=page_content, metadata=metadata)
 
 
+import hashlib
+
+def _get_file_hash(data_path: str) -> str:
+    """Calculate MD5 hash of the data file."""
+    hasher = hashlib.md5()
+    with open(data_path, "rb") as f:
+        buf = f.read()
+        hasher.update(buf)
+    return hasher.hexdigest()
+
 def ingest(data_path: str = DATA_PATH) -> int:
     """
     Load college data, embed with nomic-embed-text (Ollama), store in ChromaDB.
@@ -114,21 +124,40 @@ def ingest(data_path: str = DATA_PATH) -> int:
         persist_directory=CHROMA_PATH,
     )
 
+    # Save hash after successful ingestion
+    hash_path = Path(CHROMA_PATH) / "ingest_hash.txt"
+    hash_path.parent.mkdir(parents=True, exist_ok=True)
+    hash_path.write_text(_get_file_hash(data_path))
+
     print(f"✅  Ingested {len(documents)} documents into '{COLLECTION_NAME}'.")
     return len(documents)
 
 
 def ensure_ingested(data_path: str = DATA_PATH) -> None:
-    """No-op if collection exists; otherwise ingests."""
+    """No-op if collection exists and matches file hash; otherwise ingests."""
     try:
         client     = chromadb.PersistentClient(path=CHROMA_PATH)
         collection = client.get_collection(COLLECTION_NAME)
-        if collection.count() > 0:
-            print(f"[ingest] {collection.count()} docs in '{COLLECTION_NAME}' — skipping.")
-            return
-    except Exception:
-        pass
-    print("[ingest] Collection empty or missing — starting ingest …")
+        
+        hash_path = Path(CHROMA_PATH) / "ingest_hash.txt"
+        current_hash = _get_file_hash(data_path)
+        
+        if collection.count() > 0 and hash_path.exists():
+            stored_hash = hash_path.read_text().strip()
+            if stored_hash == current_hash:
+                print(f"[ingest] {collection.count()} docs in '{COLLECTION_NAME}' (hash match) — skipping.")
+                return
+            else:
+                print("[ingest] Hash mismatch — data file updated.")
+        elif collection.count() == 0:
+            print("[ingest] Collection empty.")
+        else:
+            print("[ingest] Hash file missing.")
+            
+    except Exception as e:
+        print(f"[ingest] Cache check failed: {e}")
+    
+    print("[ingest] Starting/Updating ingest …")
     ingest(data_path)
 
 

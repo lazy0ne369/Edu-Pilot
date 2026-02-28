@@ -1,129 +1,334 @@
 """
-EduPilot — Streamlit entrypoint.
-Run: streamlit run app.py
-
-This file ONLY wires ui/ and agent/ modules together.
-Zero business logic lives here.
+EduPilot — Refined Website Layout.
+Features: Compact Footer, Optimized Navigation and Premium Chat Page.
 """
 
 import uuid
 import streamlit as st
+import pandas as pd
+import numpy as np
 from langchain_core.messages import HumanMessage
+from agent.config import DATA_PATH
+import hashlib
+from pathlib import Path
 
-# ── Page config — must be first Streamlit call ────────────────
+# ── Page config ───────────────────────────────────────────────
 st.set_page_config(
-    page_title="EduPilot",
-    page_icon="🎓",
+    page_title="EduPilot | Premium Admissions Assistant",
+    page_icon="✦",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-# ── Imports ───────────────────────────────────────────────────
+# ── Session State Initialisation ─────────────────────────────
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "filters" not in st.session_state:
+    st.session_state.filters = {}
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "username" not in st.session_state:
+    st.session_state.username = "Aditya Kumar"
+if "saved_colleges" not in st.session_state:
+    st.session_state.saved_colleges = ["IIT Bombay", "NIT Trichy", "BITS Pilani"]
+
+# ── Custom CSS ────────────────────────────────────────────────
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #ffffff;
+    }
+
+    /* Fixed Premium Header */
+    [data-testid="stHeader"] {
+        display: none !important;
+    }
+    
+    .st-emotion-cache-18ni77z { padding-top: 0px !important; }
+
+    .header-anchor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 70px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px) saturate(180%);
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        padding: 0 5%;
+        box-sizing: border-box;
+    }
+
+    .main .block-container {
+        padding-top: 70px !important;
+        padding-bottom: 20px !important;
+    }
+
+    /* Navigation button overrides */
+    div[data-testid="stColumn"] button[kind="secondary"] {
+        background: transparent !important;
+        border: none !important;
+        color: #666 !important;
+        font-weight: 500 !important;
+        font-size: 15px !important;
+        padding: 0 10px !important;
+        transition: color 0.3s ease !important;
+    }
+    div[data-testid="stColumn"] button[kind="secondary"]:hover {
+        color: #000 !important;
+    }
+    
+    div[data-testid="stColumn"] button[kind="primary"] {
+        background-color: #000 !important;
+        color: #fff !important;
+        border-radius: 20px !important;
+        padding: 8px 24px !important;
+        font-weight: 600 !important;
+        border: none !important;
+    }
+
+    /* Home Search Bar */
+    .home-search-wrap {
+        max-width: 65% !important;
+        margin: 0 auto !important;
+    }
+    [data-testid="stTextInput"] input {
+        height: 52px !important;
+        border-radius: 12px !important;
+        border: 1px solid #e0e0e0 !important;
+        padding-left: 45px !important;
+        font-size: 16px !important;
+        transition: all 0.3s ease !important;
+    }
+    [data-testid="stTextInput"] input:focus {
+        border-color: #000 !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important;
+    }
+
+    /* Footer Redesign */
+    .premium-footer {
+        background-color: #1a1a1a;
+        color: #999;
+        padding: 40px 5%;
+        border-top: 1px solid #333;
+        margin-top: 80px;
+        width: 100%;
+        font-size: 13px;
+    }
+    .footer-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .footer-left {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .footer-right {
+        display: flex;
+        gap: 24px;
+        align-items: center;
+    }
+    .footer-logo {
+        color: #fff;
+        font-weight: 800;
+        font-size: 18px;
+        letter-spacing: -0.01em;
+    }
+    .footer-tagline {
+        color: #666;
+        font-size: 12px;
+    }
+    .footer-links {
+        display: flex;
+        gap: 20px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .footer-links a {
+        color: #999;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+    .footer-links a:hover {
+        color: #fff;
+    }
+
+    @media (max-width: 768px) {
+        .footer-content {
+            flex-direction: column;
+            text-align: center;
+            gap: 30px;
+        }
+        .footer-right {
+            flex-direction: column;
+            gap: 15px;
+        }
+        .footer-links {
+            justify-content: center;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ── Navigation Router ─────────────────────────────────────────
+def go_to(page):
+    st.session_state.page = page
+    st.rerun()
+
+# ── Optimized Header ──────────────────────────────────────────
+st.markdown('<div class="header-anchor"></div>', unsafe_allow_html=True)
+header_container = st.container()
+with header_container:
+    h_col_logo, h_col_nav, h_col_auth = st.columns([1.5, 3, 1.5])
+    with h_col_logo:
+        st.markdown('<div style="padding-top:12px; font-weight:800; font-size:22px; cursor:pointer;" onclick="window.parent.postMessage({type: \'streamlit:setComponentValue\', value: \'home\'}, \'*\')">✦ EduPilot</div>', unsafe_allow_html=True)
+        if st.button(" ", key="logo_home_btn", help="Go to Home"): go_to("home")
+    with h_col_nav:
+        n1, n2, n3 = st.columns(3)
+        with n1:
+            if st.button("Home", key="l_home"): go_to("home")
+        with n2:
+            if st.button("Agent", key="l_agent"): go_to("agent")
+        with n3:
+            if st.button("Dashboard", key="l_dash"): go_to("dashboard")
+    with h_col_auth:
+        if not st.session_state.logged_in:
+            if st.button("Login / Sign Up", key="h_auth", type="primary"):
+                st.session_state.logged_in = True
+                st.rerun()
+        else:
+            if st.button("Logout", key="h_logout", type="secondary"):
+                st.session_state.logged_in = False
+                go_to("home")
+
+# ── Logic ─────────────────────────────────────────────────────
 from agent.ingest import ensure_ingested
 from agent.graph import GRAPH
 from ui.sidebar import render_sidebar
 from ui.chat import render_chat, render_stream, render_welcome
 
-
-# ── One-time data ingestion ───────────────────────────────────
-@st.cache_resource(show_spinner="Checking college database...")
-def init_database():
-    """Run ingestion once per Streamlit server session (cached by cache_resource)."""
+@st.cache_resource
+def init_db(data_hash: str):
     ensure_ingested()
     return True
 
+def get_data_hash():
+    p = Path(DATA_PATH)
+    return hashlib.md5(p.read_bytes()).hexdigest() if p.exists() else "none"
 
-# ── Session state initialisation ─────────────────────────────
-def init_session():
-    """Initialise session state keys on first load."""
-    if "session_id" not in st.session_state:
-        st.session_state.session_id = str(uuid.uuid4())
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    if "filters" not in st.session_state:
-        st.session_state.filters = {}
+# ── Home Page ─────────────────────────────────────────────────
+def render_home_page():
+    st.markdown('<div style="text-align: center; margin-top: 80px;">', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-size: 52px; font-weight: 800; letter-spacing: -0.02em;">Elevate Your Future.</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #666; font-size: 18px; margin-bottom: 40px;">Personalised admissions guidance powered by local AI.</p>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="home-search-wrap">', unsafe_allow_html=True)
+    search_input = st.text_input("Search colleges...", placeholder="Find colleges by name, city, or courses...", label_visibility="collapsed", key="search_h")
+    if search_input:
+        st.session_state["_injected_prompt"] = f"Tell me about colleges related to: {search_input}"
+        go_to("agent")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div style="height: 380px; width: 100%; max-width: 90%; margin: 60px auto; background-image: url(\'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1400\'); background-size: cover; background-position: center; border-radius: 20px;"></div>', unsafe_allow_html=True)
 
+    st.markdown('<div style="padding: 60px 0; text-align: center; max-width: 700px; margin: 0 auto;">', unsafe_allow_html=True)
+    st.markdown('<h2 style="font-weight: 800; font-size: 32px; margin-bottom: 20px;">Our Vision</h2>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #444; line-height: 1.7; font-size: 17px;">Helping students make smarter college decisions through transparent, AI-powered insights while keeping data 100% private.</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# ── Main ──────────────────────────────────────────────────────
-def main():
-    init_database()
-    init_session()
-
-    # Sidebar filters
+# ── Agent Page ────────────────────────────────────────────────
+def render_agent_page():
     filters = render_sidebar()
     st.session_state.filters = filters
-
-    # Header
-    st.title("🎓 EduPilot")
-    st.caption(
-        f"Indian college admission counsellor · "
-        f"Session: `{st.session_state.session_id[:8]}…` · "
-        f"Filters: {', '.join(f'{k}={v}' for k,v in filters.items() if v and k != 'budget_max') or 'none'} · "
-        f"Budget: ₹{filters.get('budget_max',0):,}/yr"
-    )
-
-    # Clear history button
-    col1, col2 = st.columns([6, 1])
-    with col2:
-        if st.button("🗑️ Clear", help="Clear chat history"):
-            st.session_state.messages = []
-            st.session_state.session_id = str(uuid.uuid4())
-            st.rerun()
-
-    st.divider()
-
-    # Welcome screen (no messages yet) — passes filters for dynamic suggestions
+    
     if not st.session_state.messages:
         render_welcome(filters=filters)
 
-    # Handle prompt injected by clicking a suggestion button
     if "_injected_prompt" in st.session_state:
         injected = st.session_state.pop("_injected_prompt")
         st.session_state.messages.append({"role": "user", "content": injected})
 
-    # Chat history
     render_chat(st.session_state.messages)
 
-
-    # Chat input
-    if prompt := st.chat_input(
-        "Ask me anything — rank, fees, cutoffs, scholarships, deadlines..."
-    ):
-        # Append filters context to the query if filters are set
-        enriched_prompt = prompt
+    if prompt := st.chat_input("Ask about ranks, fees, or specific colleges..."):
         f = st.session_state.filters
-        filter_parts = []
-        if f.get("exam"):       filter_parts.append(f"Exam: {f['exam']}")
-        if f.get("category"):   filter_parts.append(f"Category: {f['category']}")
-        if f.get("quota"):      filter_parts.append(f"Quota: {f['quota']}")
-        if f.get("state"):      filter_parts.append(f"Preferred state: {f['state']}")
-        if f.get("branch"):     filter_parts.append(f"Preferred branch: {f['branch']}")
-        if f.get("budget_max"): filter_parts.append(f"Budget: ₹{f['budget_max']:,}/year")
-
-        if filter_parts:
-            enriched_prompt = (
-                f"{prompt}\n\n[Student profile: {' | '.join(filter_parts)}]"
-            )
-
-        # Display user message (original, without filter injection)
+        filter_parts = [f"{k}: {v}" for k, v in f.items() if v and k != "budget_max"]
+        if f.get("budget_max"): filter_parts.append(f"Budget: ₹{f['budget_max']:,}")
+        enriched_prompt = f"{prompt}\n\n[Profile: {' | '.join(filter_parts)}]" if filter_parts else prompt
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user", avatar="👤"):
             st.markdown(prompt)
-
-        # Stream agent response
         config = {"configurable": {"thread_id": st.session_state.session_id}}
-        input_msg = {
-            "messages": [HumanMessage(content=enriched_prompt)],
-            "filters":  st.session_state.filters,
-            "context":  "",
-        }
-
+        input_msg = {"messages": [HumanMessage(content=enriched_prompt)], "filters": f, "context": ""}
         with st.chat_message("assistant", avatar="🎓"):
             response = render_stream(GRAPH, input_msg, config)
-
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.rerun()
 
+# ── Dashboard Page ────────────────────────────────────────────
+def render_dashboard_page():
+    if not st.session_state.logged_in:
+        st.warning("Authorize to access Dashboard.")
+        render_home_page()
+        return
+    st.markdown(f"## Account Summary")
+    c1, c2 = st.columns([2, 1])
+    with c1:
+        st.markdown('<div style="background:#f9f9f9; padding:20px; border-radius:12px; margin-bottom:20px;"><h3>👤 Profile</h3><p>Aditya Kumar<br>aditya@example.com</p></div>', unsafe_allow_html=True)
+        st.markdown('### 🔖 Shortlist')
+        for clg in st.session_state.saved_colleges:
+            r1, r2 = st.columns([4, 1])
+            with r1: st.info(clg)
+            with r2: 
+                if st.button("✕", key=f"d_{clg}"):
+                    st.session_state.saved_colleges.remove(clg)
+                    st.rerun()
+
+# ── Main ──────────────────────────────────────────────────────
+def main():
+    init_db(get_data_hash())
+    
+    if st.session_state.page == "home":
+        render_home_page()
+    elif st.session_state.page == "agent":
+        render_agent_page()
+    elif st.session_state.page == "dashboard":
+        render_dashboard_page()
+
+    # Redesigned Footer
+    st.markdown("""
+    <div class="premium-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-logo">✦ EduPilot</div>
+                <div class="footer-tagline">100% Local AI. 0% Data Shared.</div>
+            </div>
+            <div class="footer-right">
+                <ul class="footer-links">
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+                <div style="color: #444;">© 2025 EduPilot</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()

@@ -1,199 +1,181 @@
 """
 EduPilot — Chat UI helpers.
-
-Functions:
-    render_welcome(filters)  — Dynamic suggestions based on active sidebar filters
-    render_chat(messages)    — Render the chat message history
-    render_stream(...)       — Stream agent tokens and return full response
+Optimised for a premium, centered AI assistant experience with integrated input.
 """
 
 import streamlit as st
 from langchain_core.messages import AIMessage
 
 
-# ── Dynamic prompt suggestions ────────────────────────────────
+# ── Chat Bubbles & Scroll Logic Styling ───────────────────────
+def inject_chat_css():
+    st.markdown("""
+    <style>
+        /* Shared font and basic layout */
+        .chat-view-root {
+            max-width: 850px;
+            margin: 0 auto;
+            padding-top: 20px;
+            /* Ensure footer can appear below */
+            padding-bottom: 40px; 
+        }
 
-def _build_suggestions(filters: dict) -> list[tuple[str, str]]:
-    """
-    Build a context-aware list of (icon, prompt) suggestions
-    based on whatever filters the user has set in the sidebar.
-    """
-    exam      = filters.get("exam")
-    category  = filters.get("category", "General")
-    quota     = filters.get("quota", "All_India")
-    state     = filters.get("state")
-    branch    = filters.get("branch", "CSE")
-    budget    = filters.get("budget_max", 500_000)
+        /* Message Bubbles Styling */
+        [data-testid="stChatMessage"] {
+            border: none !important;
+            background-color: transparent !important;
+            margin-bottom: 1.5rem !important;
+            animation: fadeInSlide 0.5s ease-out;
+        }
+        
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* User bubble (Right) */
+        div[data-testid="stChatMessage"]:has(span[aria-label="👤"]) {
+            display: flex;
+            flex-direction: row-reverse;
+            text-align: right;
+        }
+        div[data-testid="stChatMessage"]:has(span[aria-label="👤"]) .stMarkdown {
+            background-color: #000 !important;
+            color: #fff !important;
+            padding: 12px 20px !important;
+            border-radius: 20px 20px 4px 20px !important;
+            max-width: 75%;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        div[data-testid="stChatMessage"]:has(span[aria-label="👤"]) .stMarkdown p {
+            color: white !important;
+        }
 
-    budget_str = f"₹{budget // 100_000}L" if budget >= 100_000 else f"₹{budget:,}"
-    branch_str = branch or "CSE"
-    cat_str    = category or "General"
-    state_str  = state or "India"
-    exam_str   = exam or "JEE Main"
-    quota_str  = quota.replace("_", " ")
+        /* Assistant bubble (Left) */
+        div[data-testid="stChatMessage"]:has(span[aria-label="🎓"]) {
+            display: flex;
+            flex-direction: row;
+            text-align: left;
+        }
+        div[data-testid="stChatMessage"]:has(span[aria-label="🎓"]) .stMarkdown {
+            background-color: #f6f6f7 !important;
+            color: #1a1a1a !important;
+            padding: 18px 24px !important;
+            border-radius: 20px 20px 20px 4px !important;
+            max-width: 85%;
+            border: 1px solid #eee;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        /* 
+           Chat Input Integration Fix:
+           We move the chat input into the flow so it doesn't float over the footer.
+        */
+        [data-testid="stChatInput"] {
+            position: relative !important;
+            bottom: auto !important;
+            left: auto !important;
+            transform: none !important;
+            max-width: 100% !important;
+            margin: 40px 0 !important;
+            padding: 0 !important;
+            z-index: 100;
+        }
+        
+        /* Style the internal input box */
+        [data-testid="stChatInput"] > div {
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 12px !important;
+            background: white !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03) !important;
+            transition: all 0.3s ease;
+        }
+        
+        [data-testid="stChatInput"]:focus-within > div {
+            border-color: #000 !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+        }
 
-    suggestions = []
+        /* Responsive textarea */
+        [data-testid="stChatInput"] textarea {
+            font-size: 15px !important;
+            padding: 15px !important;
+        }
 
-    # ── Budget-aware suggestions ──────────────────────────────
-    if budget:
-        suggestions.append((
-            "💰",
-            f"Show me {branch_str} colleges under {budget_str} in {state_str}"
-        ))
-        suggestions.append((
-            "🎓",
-            f"Best {branch_str} colleges under {budget_str} for {cat_str} category ({quota_str} quota)"
-        ))
+        /* Hide avatars for minimal look */
+        [data-testid="stChatMessageAvatar"] {
+            display: none !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-    # ── Eligibility suggestions ───────────────────────────────
-    if exam:
-        suggestions.append((
-            "🎯",
-            f"What rank do I need for NIT Trichy with {exam} under {cat_str} category?"
-        ))
-        suggestions.append((
-            "✅",
-            f"Can I get into a top NIT with rank 45000 in {exam}?"
-        ))
-    else:
-        suggestions.append((
-            "🎯",
-            f"Can I get NIT Trichy with JEE Main rank 45000 {cat_str}?"
-        ))
-
-    # ── State-aware suggestions ───────────────────────────────
-    if state:
-        suggestions.append(("🏫", f"Top government colleges in {state_str} for {branch_str}"))
-        suggestions.append(("🏛️", f"Private colleges in {state_str} accepting {exam_str}"))
-    else:
-        suggestions.append(("🏫", "Top NITs for CSE — fees, packages and cutoffs"))
-
-    # ── Deadline and scholarship suggestions ─────────────────
-    suggestions.append(("📅", "Which college applications are still open in 2025?"))
-    suggestions.append(("💸", f"Scholarships available for {cat_str} students under {budget_str}"))
-    suggestions.append(("🏆", f"Best IITs for {branch_str} with JEE Advanced cutoffs"))
-
-    # Return first 6 (fill grid)
-    return suggestions[:6]
-
-
-# ── Welcome screen ────────────────────────────────────────────
 
 def render_welcome(filters: dict = None) -> None:
-    """
-    Display a branded welcome panel with context-aware example prompts.
-
-    Args:
-        filters: dict from render_sidebar() — used to personalise suggestions.
-                 Falls back to generic suggestions if None or empty.
-    """
-    if filters is None:
-        filters = {}
-
-    st.markdown(
-        """
-        <div style="text-align: center; padding: 2rem 1rem 1rem;">
-            <h2 style="margin-bottom: 0.2rem;">👋 Welcome to EduPilot</h2>
-            <p style="color: grey; font-size: 0.95rem;">
-                Ask me anything about Indian engineering admissions —
-                ranks, fees, cutoffs, scholarships, or deadlines.
-            </p>
+    inject_chat_css()
+    st.markdown('<div class="chat-view-root">', unsafe_allow_html=True)
+    st.markdown("""
+        <div style="text-align: center; margin: 40px 0;">
+            <h2 style="font-weight: 800; font-size: 32px; letter-spacing: -0.01em;">How can I help you today?</h2>
+            <p style="color: #666; font-size: 16px;">Predict your college match with AI.</p>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
 
-    # Show personalisation banner if filters are active
-    active = {k: v for k, v in filters.items() if v and k != "budget_max"}
-    if active or filters.get("budget_max", 500_000) != 500_000:
-        filter_tags = " · ".join(
-            [f"**{k.replace('_',' ').title()}:** {v}" for k, v in active.items()]
-            + ([f"**Budget:** ₹{filters['budget_max']//1000}K/yr"]
-               if filters.get("budget_max") else [])
-        )
-        st.info(f"🎛️ Suggestions tailored to your profile — {filter_tags}", icon="✨")
-    else:
-        st.caption("💡 Set filters in the sidebar to get personalised suggestions.")
-
-    st.markdown("**Try one of these:**")
-    suggestions = _build_suggestions(filters)
-
+    chips = [
+        "Best NITs for Computer Science?",
+        "JoSAA registration guide 2025",
+        "IIT Delhi vs IIT Bombay for EE",
+        "Colleges with low fees in North India"
+    ]
     cols = st.columns(2)
-    for i, (icon, prompt) in enumerate(suggestions):
+    for i, q in enumerate(chips):
         with cols[i % 2]:
-            if st.button(
-                f"{icon} {prompt}",
-                key=f"example_{i}",
-                use_container_width=True,
-            ):
-                st.session_state["_injected_prompt"] = prompt
+            if st.button(q, key=f"chip_{i}", use_container_width=True):
+                st.session_state["_injected_prompt"] = q
                 st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.divider()
-
-
-# ── Chat history renderer ─────────────────────────────────────
 
 def render_chat(messages: list[dict]) -> None:
-    """
-    Render all messages in the session history.
-
-    Args:
-        messages: List of {'role': 'user'|'assistant', 'content': str}
-    """
+    inject_chat_css()
+    st.markdown('<div class="chat-view-root">', unsafe_allow_html=True)
     for msg in messages:
         avatar = "👤" if msg["role"] == "user" else "🎓"
         with st.chat_message(msg["role"], avatar=avatar):
             st.markdown(msg["content"])
+    st.markdown('</div>', unsafe_allow_html=True)
 
-
-# ── Streaming agent response ──────────────────────────────────
 
 def render_stream(graph, input_msg: dict, config: dict) -> str:
-    """
-    Stream tokens from the LangGraph agent and render them live.
-
-    Args:
-        graph:     Compiled LangGraph graph (GRAPH singleton)
-        input_msg: Dict with 'messages' key containing HumanMessage
-        config:    LangGraph config with thread_id
-
-    Returns:
-        Full response string (stored in session messages).
-    """
+    # Use a specific container for streaming to maintain root styles
+    st.markdown('<div class="chat-view-root">', unsafe_allow_html=True)
     response_placeholder = st.empty()
     full_response = ""
 
-    # Clear previous count if any
-    if "last_count" in st.session_state:
-        del st.session_state.last_count
-
-    # Show a simple spinner while the agent is searching
-    with st.spinner("🔍 Searching college database..."):
+    with st.spinner(" "):
         try:
             for state in graph.stream(input_msg, config, stream_mode="values"):
                 messages = state.get("messages", [])
-                if not messages:
-                    continue
-
+                if not messages: continue
                 last_msg = messages[-1]
 
                 if isinstance(last_msg, AIMessage):
                     content = last_msg.content
                     if isinstance(content, str) and content.strip():
                         full_response = content
+                        # Render inside the styled root
                         response_placeholder.markdown(full_response + "▌")
 
             if full_response:
-                # Update with the final full text
                 response_placeholder.markdown(full_response)
             else:
-                full_response = "Thinking..."
+                full_response = "Synthesizing response..."
                 response_placeholder.markdown(full_response)
 
         except Exception as e:
-            error_msg = str(e)
-            full_response = f"⚠️ **Error:** {error_msg}"
+            full_response = f"⚠️ **Error:** {str(e)}"
             response_placeholder.markdown(full_response)
 
+    st.markdown('</div>', unsafe_allow_html=True)
     return full_response

@@ -1,122 +1,70 @@
 """
-EduPilot — Streamlit sidebar with filter widgets.
-render_sidebar() returns a dict of the student's selected filters.
+EduPilot — Redesigned Sidebar.
+Clean, minimal, and professional filter panel.
 """
 
 import streamlit as st
 
 # ── Dropdown options ──────────────────────────────────────────
-
-EXAMS = [
-    "", "JEE Main", "JEE Advanced", "BITSAT", "VITEEE",
-    "KCET", "MHT-CET", "TNEA", "COMEDK", "SRMJEEE",
-    "WBJEE", "AP EAMCET", "TS EAMCET",
-]
-
-CATEGORIES = ["", "General", "OBC", "EWS", "SC", "ST", "PwD"]
-
-QUOTAS = ["All_India", "Home_State", "Management", "NRI"]
-
-BRANCHES = [
-    "", "CSE", "ECE", "Mech", "Civil", "EE",
-    "Chemical", "AI/ML", "IT", "Biotech",
-]
-
-STATES = [
-    "", "Andhra Pradesh", "Assam", "Bihar", "Chhattisgarh",
-    "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh",
-    "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
-    "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-    "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim",
-    "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
-    "Uttarakhand", "West Bengal",
-]
+EXAMS = ["", "JEE Main", "JEE Advanced", "BITSAT", "VITEEE", "KCET", "MHT-CET"]
+CATEGORIES = ["", "General", "OBC", "EWS", "SC", "ST"]
+QUOTAS = ["All_India", "Home_State", "Management"]
+BRANCHES = ["", "CSE", "ECE", "Mech", "Civil", "EE", "AI/ML"]
+STATES = ["", "Andhra Pradesh", "Delhi", "Gujarat", "Karnataka", "Maharashtra", "Tamil Nadu"]
 
 
 def render_sidebar() -> dict:
     """
-    Render the sidebar filter panel.
-    Returns a dict:
-        {
-            "exam":       str | None,
-            "category":   str | None,
-            "quota":      str,
-            "state":      str | None,
-            "branch":     str | None,
-            "budget_max": int,
-        }
+    Render a professional filter sidebar for students.
     """
+    
+    # Sidebar CSS for premium feel
+    st.markdown("""
+    <style>
+        [data-testid="stSidebar"] {
+            background-color: #ffffff;
+            border-right: 1px solid #eee;
+        }
+        [data-testid="stSidebar"] .stSelectbox label, 
+        [data-testid="stSidebar"] .stSlider label {
+            color: #666 !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0a0a0a;
+            margin-bottom: 25px;
+            margin-top: 10px;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
     with st.sidebar:
-
-        st.markdown("## 🎓 EduPilot")
-        st.markdown("*Your local admission counsellor*")
+        st.markdown('<div class="sidebar-title">Filters</div>', unsafe_allow_html=True)
+        
+        exam = st.selectbox("Entrance Exam", EXAMS)
+        category = st.selectbox("Category", CATEGORIES)
+        quota = st.selectbox("Quota", QUOTAS, index=0)
+        
         st.divider()
-
-        st.markdown("### 🔍 Student Profile")
-
-        exam = st.selectbox(
-            "Entrance Exam",
-            EXAMS,
-            help="Which exam did / will you appear for?",
-        )
-
-        category = st.selectbox(
-            "Category",
-            CATEGORIES,
-            help="Your reservation category for cutoff comparison.",
-        )
-
-        quota = st.selectbox(
-            "Quota",
-            QUOTAS,
-            index=0,
-            help="All_India quota applies nationwide; Home_State gives state preference.",
-        )
-
-        st.divider()
-        st.markdown("### 🗓️ Preferences")
-
-        state = st.selectbox(
-            "Preferred State",
-            STATES,
-            help="Filter colleges by state (leave blank for all India).",
-        )
-
-        branch = st.selectbox(
-            "Preferred Branch",
-            BRANCHES,
-            help="Your target engineering branch.",
-        )
-
+        
+        state = st.selectbox("Target State", STATES)
+        branch = st.selectbox("Preferred Branch", BRANCHES)
+        
         budget_max = st.slider(
-            "Max Annual Tuition (₹)",
+            "Max Annual Fee (₹)",
             min_value=50_000,
             max_value=2_000_000,
             value=500_000,
-            step=25_000,
-            format="₹%d",
-            help="Colleges above this fee will be deprioritised.",
+            step=50_000,
+            format="₹%d"
         )
-
+        
         st.divider()
-        st.markdown("### ℹ️ About")
-        st.caption(
-            "EduPilot runs 100% locally using Ollama + ChromaDB. "
-            "No data leaves your device."
-        )
-
-        st.markdown("**Models used:**")
-        st.code("LLM:    Solar Pro 3\nEmbed:  mxbai-embed-large", language="text")
-
-        st.markdown("**Quick start:**")
-        with st.expander("Example questions"):
-            st.markdown(
-                "- Show CSE colleges under ₹2L in Tamil Nadu\n"
-                "- Can I get NIT Trichy with JEE rank 45000 OBC?\n"
-                "- When does VIT application close?\n"
-                "- Best BITS campus for CS?\n"
-                "- IIT cutoffs for SC category 2024"
-            )
+        st.caption("✦ EduPilot Agent Context")
+        st.caption("Filters help the AI provide more relevant admissions advice.")
 
     return {
         "exam":       exam or None,
