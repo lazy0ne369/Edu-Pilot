@@ -7,22 +7,21 @@ This is more reliable than tool calling — works with all models.
 """
 
 import logging
+from dotenv import load_dotenv
 from typing import Annotated
 
-import requests as http_requests
-from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from agent.config import (
     LLM_MODEL,
     LLM_TEMPERATURE,
     MEMORY_K,
     LLM_API_KEY,
-    LLM_BASE_URL,
 )
 from agent.prompts import SYSTEM_PROMPT
 from agent.retriever import get_retriever
@@ -46,34 +45,19 @@ class AgentState(TypedDict):
     college_count: int       # number of colleges found matching filters
 
 
-# ── OpenRouter call (raw requests — simple and reliable) ──────
-def _call_llm(model: str, system: str, history: list[dict]) -> str:
-    """Call the LLM with a given model and message history."""
-    response = http_requests.post(
-        url=f"{LLM_BASE_URL}/chat/completions",
-        headers={
-            "Authorization": f"Bearer {LLM_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model,
-            "temperature": LLM_TEMPERATURE,
-            "messages": [{"role": "system", "content": system}] + history,
-        },
-        timeout=30,
+# ── LLM call (ChatGoogleGenerativeAI) ──────────────────────────────
+def _call_llm(model: str, system: str, history: list[BaseMessage]) -> str:
+    """Call the LLM with a given model and message history using LangChain."""
+    llm = ChatGoogleGenerativeAI(
+        model=model,
+        google_api_key=LLM_API_KEY,
+        temperature=LLM_TEMPERATURE
     )
-    # Gemini OpenAI endpoint sometimes returns a list of error objects: [{"error": {...}}]
-    data = response.json()
-    if isinstance(data, list) and len(data) > 0:
-        data = data[0]
-
-    if "choices" in data:
-        return data["choices"][0]["message"]["content"]
     
-    # Handle error message
-    err_info = data.get("error", {}) if isinstance(data, dict) else {}
-    msg = err_info.get("message", str(data))
-    raise RuntimeError(msg)
+    messages = [SystemMessage(content=system)] + history
+    response = llm.invoke(messages)
+    return response.content
+
 
 
 # ── RAG retrieval ─────────────────────────────────────────────
@@ -142,13 +126,8 @@ def build_graph():
         else:
             system += "\n\nNo matching colleges found for this student profile and query. State that clearly and suggest adjusting filters."
 
-        # Convert LangChain messages to OpenRouter format
-        history = []
-        for msg in trimmed:
-            if isinstance(msg, HumanMessage):
-                history.append({"role": "user", "content": msg.content})
-            elif isinstance(msg, AIMessage) and msg.content:
-                history.append({"role": "assistant", "content": msg.content})
+        # We can just pass the trimmed LangChain messages directly
+        history = list(trimmed)
 
         if not history:
             return {"messages": [AIMessage(content="Please ask a question about Indian college admissions.")]}

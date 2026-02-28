@@ -101,12 +101,11 @@ def render_sidebar() -> dict:
         st.divider()
         st.markdown("### ℹ️ About")
         st.caption(
-            "EduPilot runs 100% locally using Ollama + ChromaDB. "
-            "No data leaves your device."
+            "EduPilot uses Google Gemini for chat and HuggingFace for lightning-fast local RAG retrieval."
         )
 
         st.markdown("**Models used:**")
-        st.code("LLM:    Solar Pro 3\nEmbed:  mxbai-embed-large", language="text")
+        st.code("LLM:    gemini-1.5-flash\nEmbed:  all-MiniLM-L6-v2", language="text")
 
         st.markdown("**Quick start:**")
         with st.expander("Example questions"):
